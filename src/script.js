@@ -4,8 +4,8 @@ const startButton = document.getElementById("start-button");
 const resetButton = document.getElementById("reset-button");
 
 const matchGrid = new MatchGrid({
-  width: "1200px",
-  height: "500px",
+  width: "300px",
+  height: "300px",
   numColumns: 4,
   numRows: 2,
   timeLimit: 300,

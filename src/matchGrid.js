@@ -7,9 +7,8 @@ export default class MatchGrid {
     this.timeLimit = args.timeLimit;
     this.theme = args.theme;
     this.matchedPairs = 0;
-    this.totalPairs = (this.numColumns * this.numRows) / 2;
     this.pairs = this.generatePairs();
-    this.shuffledPairs = this.shuffleArray(this.pairs.slice());
+    this.shuffledPairs = this.shuffleArray(this.pairs);
     this.lastClickedCard = null;
     this.isGameRunning = false;
   }
@@ -30,6 +29,8 @@ export default class MatchGrid {
       delay: anime.stagger(200, { grid: [16, 4], from: "center" }),
     });
   }
+
+  calculateTotalPairs() {}
 
   startTimer() {
     this.remainingTime = this.timeLimit;
@@ -152,7 +153,9 @@ export default class MatchGrid {
         duration: 400,
         complete: () => {
           playing = false;
-          if (callback) callback(card);
+          if (callback) {
+            callback(card);
+          }
         },
       });
     }.bind(card);
@@ -203,20 +206,19 @@ export default class MatchGrid {
   }
 
   createGrid() {
-    const gridContainer = document.getElementById("grid-container");
-    if (gridContainer) {
-      gridContainer.innerHTML = "";
+    if (this.gridContainer) {
+      this.gridContainer.innerHTML = "";
     }
 
-    gridContainer.style.width = this.width;
-    gridContainer.style.height = this.height;
-    gridContainer.style.gridTemplateColumns = `repeat(${this.numColumns}, 1fr)`;
-    gridContainer.style.fontSize = this.theme.fontSize;
-    gridContainer.style.fontWeight = this.theme.fontWeight;
+    this.gridContainer.style.gridTemplateColumns = `repeat(${this.numColumns}, 1fr)`;
+    this.gridContainer.style.fontSize = this.theme.fontSize;
+    this.gridContainer.style.fontWeight = this.theme.fontWeight;
 
     this.shuffledPairs.forEach((pairValue) => {
       const card = this.createCard(pairValue);
-      gridContainer.appendChild(card);
+      card.style.width = this.width;
+      card.style.height = this.height;
+      this.gridContainer.appendChild(card);
     });
   }
 
@@ -225,9 +227,7 @@ export default class MatchGrid {
     this.isGameRunning = false;
 
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        alert(message);
-      });
+      alert(message);
     });
 
     anime({
@@ -238,8 +238,15 @@ export default class MatchGrid {
     });
 
     setTimeout(() => {
-      const gridContainer = document.getElementById("grid-container");
-      gridContainer.innerHTML = "";
+      this.gridContainer.innerHTML = "";
     }, 3000);
+  }
+
+  get gridContainer() {
+    return document.getElementById("grid-container");
+  }
+
+  get totalPairs() {
+    return (this.numColumns * this.numRows) / 2;
   }
 }
