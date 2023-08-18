@@ -41,7 +41,6 @@ export default class MatchGrid {
         if (this.isGameRunning) {
           this.startCountdown();
         }
-        console.log("fires");
       });
 
       container.addEventListener("mouseleave", () => {
