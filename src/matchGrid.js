@@ -30,8 +30,6 @@ export default class MatchGrid {
     });
   }
 
-  calculateTotalPairs() {}
-
   startTimer() {
     this.remainingTime = this.timeLimit;
     this.updateTimer();
