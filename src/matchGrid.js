@@ -94,9 +94,12 @@ export default class MatchGrid {
         complete: () => {
           playing = false;
           if (callback) callback(card);
-          
         },
       });
+
+      if (card.lastChild.matches('.matched')) {
+        anime.remove(card)
+      }
     }.bind(card);
 
     return handleClick;
