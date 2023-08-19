@@ -1,25 +1,33 @@
+import MatchTimer from "./matchTimer.js";
+import PairsGenerator from "./pairsGenerator.js";
+
 export default class MatchGrid {
+
   constructor(args) {
+    this.timer = new MatchTimer({ timeLimit: args.timeLimit, gameOverCallback: this.gameOver.bind(this) });
+    this.pairsGenerator = new PairsGenerator({ numColumns: args.numColumns, numRows: args.numRows });
+
+    this.shuffledPairs = this.pairsGenerator.generateShuffledPairs();
+    this.matchedPairs = 0;
+
     this.width = args.width;
     this.height = args.height;
+  
     this.numColumns = args.numColumns;
     this.numRows = args.numRows;
-    this.timeLimit = args.timeLimit;
+  
     this.theme = args.theme;
-    this.matchedPairs = 0;
-    this.pairs = this.generatePairs();
-    this.shuffledPairs = this.shuffleArray(this.pairs);
+
     this.lastClickedCard = null;
-    this.isGameRunning = false;
   }
 
   startGame() {
-    this.clearTimer();
+    this.timer.clearTimer();
     this.matchedPairs = 0;
-    this.isGameRunning = true;
+   
     this.grid = this.createGrid();
 
-    this.startTimer();
+    this.timer.startTimer();
     anime({
       targets: ".card-container",
       scale: [
@@ -28,75 +36,6 @@ export default class MatchGrid {
       ],
       delay: anime.stagger(200, { grid: [16, 4], from: "center" }),
     });
-  }
-
-  startTimer() {
-    this.remainingTime = this.timeLimit;
-    this.updateTimer();
-    this.startCountdown();
-
-    const container = document.getElementById("game-container");
-    if (container) {
-      container.addEventListener("mouseenter", () => {
-        if (this.isGameRunning) {
-          this.startCountdown();
-        }
-      });
-
-      container.addEventListener("mouseleave", () => {
-        clearInterval(this.timerInterval);
-      });
-    }
-  }
-
-  startCountdown() {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-    }
-    this.timerInterval = setInterval(() => {
-      this.remainingTime--;
-      this.updateTimer();
-
-      if (this.remainingTime <= 0) {
-        clearInterval(this.timerInterval);
-        this.gameOver("You ran out of time!");
-      }
-    }, 1000);
-  }
-
-  updateTimer() {
-    const timerElement = document.getElementById("game-timer");
-    if (timerElement) {
-      timerElement.innerText = `Time remaining: ${this.remainingTime} seconds`;
-    }
-  }
-
-  clearTimer() {
-    this.remainingTime = 0;
-    clearInterval(this.timerInterval);
-    const timerElement = document.getElementById("game-timer");
-    if (timerElement) {
-      timerElement.innerText = `The game is finished!`;
-    }
-  }
-
-  generatePairs() {
-    try {
-      const pairs = new Array(this.totalPairs)
-        .fill(0)
-        .flatMap((_, i) => [i + 1, i + 1]);
-      return pairs;
-    } catch (e) {
-      alert("Create grid with paired amount of cards!");
-    }
-  }
-
-  shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
   }
 
   createCard(pairValue) {
@@ -108,12 +47,16 @@ export default class MatchGrid {
 
     const front = document.createElement("div");
     front.classList.add("front");
+    front.style.width = this.width;
+    front.style.height = this.height;
     front.textContent = "Open me";
     front.style.backgroundColor = this.theme.mainColor;
     front.style.color = this.theme.secondaryColor;
 
     const back = document.createElement("div");
     back.classList.add("back");
+    back.style.width = this.width;
+    back.style.height = this.height;
     back.textContent = pairValue;
     back.style.backgroundColor = this.theme.secondaryColor;
     back.style.color = this.theme.mainColor;
@@ -150,9 +93,8 @@ export default class MatchGrid {
         duration: 400,
         complete: () => {
           playing = false;
-          if (callback) {
-            callback(card);
-          }
+          if (callback) callback(card);
+          
         },
       });
     }.bind(card);
@@ -187,7 +129,7 @@ export default class MatchGrid {
       this.markMatchedCards([previousCardValue, currentCardValue]);
       this.matchedPairs++;
 
-      if (this.matchedPairs === this.totalPairs) {
+      if (this.matchedPairs === this.pairsGenerator.getTotalPairs()) {
         this.gameOver("You won! All pairs matched!");
       }
     }
@@ -203,28 +145,30 @@ export default class MatchGrid {
   }
 
   createGrid() {
-    if (this.gridContainer) {
-      this.gridContainer.innerHTML = "";
+    const gridContainer = document.getElementById("grid-container");
+    if (gridContainer) {
+      gridContainer.innerHTML = "";
     }
 
-    this.gridContainer.style.gridTemplateColumns = `repeat(${this.numColumns}, 1fr)`;
-    this.gridContainer.style.fontSize = this.theme.fontSize;
-    this.gridContainer.style.fontWeight = this.theme.fontWeight;
+
+    gridContainer.style.gridTemplateColumns = `repeat(${this.numColumns}, 1fr)`;
+    gridContainer.style.fontSize = this.theme.fontSize;
+    gridContainer.style.fontWeight = this.theme.fontWeight;
 
     this.shuffledPairs.forEach((pairValue) => {
       const card = this.createCard(pairValue);
-      card.style.width = this.width;
-      card.style.height = this.height;
-      this.gridContainer.appendChild(card);
+      gridContainer.appendChild(card);
     });
   }
 
   gameOver(message) {
-    this.clearTimer();
-    this.isGameRunning = false;
+    this.timer.clearTimer();
+    this.timer.isGameRunning = false;
 
     requestAnimationFrame(() => {
-      alert(message);
+      requestAnimationFrame(() => {
+        alert(message);
+      });
     });
 
     anime({
@@ -235,15 +179,8 @@ export default class MatchGrid {
     });
 
     setTimeout(() => {
-      this.gridContainer.innerHTML = "";
+      const gridContainer = document.getElementById("grid-container");
+      gridContainer.innerHTML = "";
     }, 3000);
-  }
-
-  get gridContainer() {
-    return document.getElementById("grid-container");
-  }
-
-  get totalPairs() {
-    return (this.numColumns * this.numRows) / 2;
   }
 }
